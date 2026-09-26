@@ -146,44 +146,76 @@ function decideGhost( game, g ) {
   }
 }
 
-function moveGhostWaiting( g ) {
-  if ( g.dir !== 'up' && g.dir !== 'down' ) g.dir = 'up';
-  if ( aligned( g.x ) && aligned( g.y ) ) {
-    g.x = Math.round( g.x );
-    g.y = Math.round( g.y );
-    if ( g.y <= 13 ) g.dir = 'down';
-    else if ( g.y >= 15 ) g.dir = 'up';
+function moveGhostWaiting( ghost ) {
+  if ( ghost.dir !== 'up' && ghost.dir !== 'down' ) ghost.dir = 'up';
+  if ( aligned( ghost.x ) && aligned( ghost.y ) ) {
+    ghost.x = Math.round( ghost.x );
+    ghost.y = Math.round( ghost.y );
+    if ( ghost.y <= 13 ) ghost.dir = 'down';
+    else if ( ghost.y >= 15 ) ghost.dir = 'up';
   }
-  const d = DIRS[ g.dir ];
-  g.y += d.y * g.speed;
-  if ( g.y < 13 ) {
-    g.y = 13;
-    g.dir = 'down';
-  } else if ( g.y > 15 ) {
-    g.y = 15;
-    g.dir = 'up';
+  const direction = DIRS[ ghost.dir ];
+  ghost.y += direction.y * ghost.speed;
+  if ( ghost.y < 13 ) {
+    ghost.y = 13;
+    ghost.dir = 'down';
+  } else if ( ghost.y > 15 ) {
+    ghost.y = 15;
+    ghost.dir = 'up';
   }
 }
 
-function moveGhost( game, g ) {
+function moveGhostExiting( ghost ) {
+  const targetLaneX = ghost.exitLaneX;
+  const targetCorridorY = 11;
+  const horizontalDistance = ghost.x - targetLaneX;
+  if ( Math.abs( horizontalDistance ) > 1e-3 ) {
+    const horizontalDirection = horizontalDistance < 0 ? 'right' : 'left';
+    ghost.dir = horizontalDirection;
+    const step = DIRS[ horizontalDirection ].x * ghost.speed;
+    const nextX = ghost.x + step;
+    if ( ( horizontalDirection === 'right' && nextX > targetLaneX ) ||
+         ( horizontalDirection === 'left' && nextX < targetLaneX ) ) {
+      ghost.x = targetLaneX;
+    } else {
+      ghost.x = nextX;
+    }
+    return;
+  }
+  ghost.x = targetLaneX;
+  ghost.dir = 'up';
+  const nextY = ghost.y - ghost.speed;
+  if ( nextY <= targetCorridorY ) {
+    ghost.y = targetCorridorY;
+    ghost.phase = 'active';
+  } else {
+    ghost.y = nextY;
+  }
+}
+
+function moveGhost( game, ghost ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
 
-  if ( g.phase === 'waiting' ) {
-    moveGhostWaiting( g );
+  if ( ghost.phase === 'waiting' ) {
+    moveGhostWaiting( ghost );
     return;
   }
-  if ( aligned( g.x ) && aligned( g.y ) ) {
-    g.x = Math.round( g.x );
-    g.y = Math.round( g.y );
-    decideGhost( game, g );
-    if ( !canMove( grid, g.x, g.y, g.dir, 'ghost' ) ) return;
+  if ( ghost.phase === 'exiting' ) {
+    moveGhostExiting( ghost );
+    return;
+  }
+  if ( aligned( ghost.x ) && aligned( ghost.y ) ) {
+    ghost.x = Math.round( ghost.x );
+    ghost.y = Math.round( ghost.y );
+    decideGhost( game, ghost );
+    if ( !canMove( grid, ghost.x, ghost.y, ghost.dir, 'ghost' ) ) return;
   }
 
-  const d = DIRS[ g.dir ];
-  g.x += d.x * g.speed;
-  g.y += d.y * g.speed;
-  wrapTunnel( g, width );
+  const direction = DIRS[ ghost.dir ];
+  ghost.x += direction.x * ghost.speed;
+  ghost.y += direction.y * ghost.speed;
+  wrapTunnel( ghost, width );
 }
 
 function resetPositions( game ) {
@@ -204,11 +236,11 @@ function collides( a, b ) {
 }
 
 function updateGhostReleases( game ) {
-  for ( const g of game.ghosts ) {
-    if ( g.phase === 'waiting' && game.elapsedSeconds >= g.releaseAt ) {
-      g.phase = 'exiting';
-      g.x = Math.round( g.x );
-      g.y = Math.round( g.y );
+  for ( const ghost of game.ghosts ) {
+    if ( ghost.phase === 'waiting' && game.elapsedSeconds >= ghost.releaseAt ) {
+      ghost.phase = 'exiting';
+      ghost.x = Math.round( ghost.x );
+      ghost.y = Math.round( ghost.y );
     }
   }
 }
