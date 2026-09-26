@@ -251,20 +251,22 @@ function moveGhost( game, ghost ) {
 }
 
 function resetPositions( game ) {
-  const p = game.pacman;
-  p.x = PACMAN_START.x;
-  p.y = PACMAN_START.y;
-  p.dir = 'left';
-  p.nextDir = null;
-  game.ghosts.forEach( ( g, i ) => {
-    g.x = GHOST_STARTS[ i ].x;
-    g.y = GHOST_STARTS[ i ].y;
-    g.dir = 'up';
+  const pacman = game.pacman;
+  pacman.x = PACMAN_START.x;
+  pacman.y = PACMAN_START.y;
+  pacman.dir = 'left';
+  pacman.nextDir = null;
+  game.elapsedSeconds = 0;
+  game.ghosts.forEach( ( ghost, index ) => {
+    ghost.x = GHOST_STARTS[ index ].x;
+    ghost.y = GHOST_STARTS[ index ].y;
+    ghost.dir = 'up';
+    ghost.phase = 'waiting';
   } );
 }
 
-function collides( a, b ) {
-  return Math.abs( a.x - b.x ) < 0.5 && Math.abs( a.y - b.y ) < 0.5;
+function collides( firstActor, secondActor ) {
+  return Math.abs( firstActor.x - secondActor.x ) < 0.5 && Math.abs( firstActor.y - secondActor.y ) < 0.5;
 }
 
 function updateGhostReleases( game ) {
@@ -283,10 +285,11 @@ function update( game, deltaSeconds ) {
   }
   updateGhostReleases( game );
   movePacman( game );
-  game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
+  game.ghosts.forEach( ( ghost ) => moveGhost( game, ghost ) );
 
-  for ( const g of game.ghosts ) {
-    if ( collides( game.pacman, g ) ) {
+  for ( const ghost of game.ghosts ) {
+    if ( ghost.phase === 'waiting' ) continue;
+    if ( collides( game.pacman, ghost ) ) {
       game.lives--;
       if ( game.lives <= 0 ) {
         game.state = 'lost';
