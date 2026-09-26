@@ -1,0 +1,22 @@
+# Repository Guide
+
+## Run And Verify
+
+- This is a dependency-free browser app; there is no package manifest, build step, automated test suite, linter, or formatter.
+- Serve it from the repository root with `python3 -m http.server 8000 --directory src`, then open `http://localhost:8000/`.
+- Run focused JavaScript syntax checks with `node --check src/js/maze.js && node --check src/js/game.js && node --check src/js/render.js && node --check src/js/main.js`.
+- Gameplay changes require browser verification: start/restart overlay, queued arrow turns, wall and pen-door collision, row-14 tunnel wrapping, dot/score updates, life reset, and win/loss states.
+
+## Runtime Structure
+
+- `src/index.html` loads classic scripts in dependency order: `maze.js`, `game.js`, `render.js`, `main.js`. They communicate through `window` globals, not ES modules; preserve this order unless converting every dependency together.
+- `maze.js` owns the pristine 28x31 tile map and spawn constants. Tile values are `0` traversable, `1` wall, `2` dot, and `3` ghost-pen door; coordinates are `(x, y)` from the top-left.
+- `game.js` owns mutable game state and rules. `createGame()` must copy `MAZE`; consumed dots must mutate `game.grid`, never `MAZE`, so restart remains clean.
+- `render.js` draws from `game.grid`. Its `TILE = 20`, the 28x31 map, and the canvas size `560x620` are coupled; change them together.
+- Movement is measured in cells per animation frame. Turning and ghost decisions happen only on integer-cell alignment; speed changes must still reach exact cell boundaries or account for alignment explicitly.
+- Ghost movement uses `Math.random()`, so browser behavior is nondeterministic unless randomness is deliberately injected or stubbed.
+
+## Spec Workflow
+
+- For large features, use repo-local `/spec`; it asks required clarification questions and writes a numbered Draft under `specs/`. Full rules live in `.agents/skills/spec/SKILL.md`.
+- Implement with `/spec-impl` only after a human changes spec state to an Approved equivalent. That workflow controls `spec-NN-slug` branch creation and requires a review pause after each plan step; see `.agents/skills/spec-impl/SKILL.md`.
