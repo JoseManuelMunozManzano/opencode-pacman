@@ -5,7 +5,7 @@
 // Coordenadas: celda (x,y), origen arriba-izquierda. x in [0,27], y in [0,30].
 // Simetrico respecto al eje vertical central (entre cols 13 y 14).
 
-const MAZE_STR = [
+const MAZE_TEXT_ROWS = [
   '############################', // 0  borde
   '#............##............#', // 1
   '#.####.#####.##.#####.####.#', // 2
@@ -39,21 +39,23 @@ const MAZE_STR = [
   '############################', // 30  borde
 ];
 
-function parseTile( ch ) {
-  if ( ch === '#' ) return 1;
-  if ( ch === '.' ) return 2;
-  if ( ch === '-' ) return 3;
+function parseTile( character ) {
+  if ( character === '#' ) return 1;
+  if ( character === '.' ) return 2;
+  if ( character === '-' ) return 3;
   return 0; // espacio = vacio transitable
 }
 
 // Matriz numerica pristina (no se muta; cada partida copia esto).
-const MAZE = MAZE_STR.map( ( row ) => row.split( '' ).map( parseTile ) );
+const MAZE = MAZE_TEXT_ROWS.map( ( row ) => row.split( '' ).map( parseTile ) );
 
 const TUNNEL_ROW = 14;
 const PACMAN_START = { x: 13, y: 23 };
 const GHOST_STARTS = [
-  { x: 13, y: 14, kind: 'hunter' }, // dentro de la pen
-  { x: 14, y: 14, kind: 'random' }, // dentro de la pen
+  { name: 'Blinky', kind: 'blinky', x: 13, y: 14, releaseAt: 1.5 },
+  { name: 'Pinky', kind: 'pinky', x: 14, y: 14, releaseAt: 3.0 },
+  { name: 'Inky', kind: 'inky', x: 12, y: 14, releaseAt: 4.5 },
+  { name: 'Clyde', kind: 'clyde', x: 15, y: 14, releaseAt: 6.0 },
 ];
 
 window.MAZE = MAZE;

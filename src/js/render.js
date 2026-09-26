@@ -7,159 +7,168 @@ const DOOR_COLOR = '#ffb8ff';
 const DOT_COLOR = '#ffb897';
 
 function cellCenter( x, y ) {
-  return { cx: x * TILE + TILE / 2, cy: y * TILE + TILE / 2 };
+  return { centerX: x * TILE + TILE / 2, centerY: y * TILE + TILE / 2 };
 }
 
 // Paredes estilo arcade: lineas finas redondeadas que conectan los centros
 // de celdas-pared adyacentes. Produce el trazado continuo del original.
-function drawWalls( ctx, grid ) {
-  const H = grid.length;
-  const W = grid[ 0 ].length;
-  ctx.strokeStyle = WALL_COLOR;
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  for ( let y = 0; y < H; y++ ) {
-    for ( let x = 0; x < W; x++ ) {
+function drawWalls( drawingContext, grid ) {
+  const mazeHeight = grid.length;
+  const mazeWidth = grid[ 0 ].length;
+  drawingContext.strokeStyle = WALL_COLOR;
+  drawingContext.lineWidth = 2.5;
+  drawingContext.lineCap = 'round';
+  drawingContext.lineJoin = 'round';
+  drawingContext.beginPath();
+  for ( let y = 0; y < mazeHeight; y++ ) {
+    for ( let x = 0; x < mazeWidth; x++ ) {
       if ( grid[ y ][ x ] !== 1 ) continue;
-      const { cx, cy } = cellCenter( x, y );
+      const { centerX, centerY } = cellCenter( x, y );
       // Conectar solo hacia derecha y abajo evita trazos duplicados.
-      if ( x + 1 < W && grid[ y ][ x + 1 ] === 1 ) {
-        ctx.moveTo( cx, cy );
-        ctx.lineTo( cx + TILE, cy );
+      if ( x + 1 < mazeWidth && grid[ y ][ x + 1 ] === 1 ) {
+        drawingContext.moveTo( centerX, centerY );
+        drawingContext.lineTo( centerX + TILE, centerY );
       }
-      if ( y + 1 < H && grid[ y + 1 ][ x ] === 1 ) {
-        ctx.moveTo( cx, cy );
-        ctx.lineTo( cx, cy + TILE );
+      if ( y + 1 < mazeHeight && grid[ y + 1 ][ x ] === 1 ) {
+        drawingContext.moveTo( centerX, centerY );
+        drawingContext.lineTo( centerX, centerY + TILE );
       }
       // Celda-pared aislada (sin vecino): punto corto para que se vea.
-      const lone =
-        ( x + 1 >= W || grid[ y ][ x + 1 ] !== 1 ) &&
+      const isolatedWallCell =
+        ( x + 1 >= mazeWidth || grid[ y ][ x + 1 ] !== 1 ) &&
         ( x - 1 < 0 || grid[ y ][ x - 1 ] !== 1 ) &&
-        ( y + 1 >= H || grid[ y + 1 ][ x ] !== 1 ) &&
+        ( y + 1 >= mazeHeight || grid[ y + 1 ][ x ] !== 1 ) &&
         ( y - 1 < 0 || grid[ y - 1 ][ x ] !== 1 );
-      if ( lone ) {
-        ctx.moveTo( cx - 3, cy );
-        ctx.lineTo( cx + 3, cy );
+      if ( isolatedWallCell ) {
+        drawingContext.moveTo( centerX - 3, centerY );
+        drawingContext.lineTo( centerX + 3, centerY );
       }
     }
   }
-  ctx.stroke();
+  drawingContext.stroke();
 }
 
-function drawDoor( ctx, grid ) {
-  const H = grid.length;
-  const W = grid[ 0 ].length;
-  ctx.strokeStyle = DOOR_COLOR;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  for ( let y = 0; y < H; y++ ) {
-    for ( let x = 0; x < W; x++ ) {
+function drawDoor( drawingContext, grid ) {
+  const mazeHeight = grid.length;
+  const mazeWidth = grid[ 0 ].length;
+  drawingContext.strokeStyle = DOOR_COLOR;
+  drawingContext.lineWidth = 3;
+  drawingContext.beginPath();
+  for ( let y = 0; y < mazeHeight; y++ ) {
+    for ( let x = 0; x < mazeWidth; x++ ) {
       if ( grid[ y ][ x ] !== 3 ) continue;
-      const px = x * TILE;
-      const py = y * TILE + TILE / 2;
-      ctx.moveTo( px, py );
-      ctx.lineTo( px + TILE, py );
+      const pixelX = x * TILE;
+      const pixelY = y * TILE + TILE / 2;
+      drawingContext.moveTo( pixelX, pixelY );
+      drawingContext.lineTo( pixelX + TILE, pixelY );
     }
   }
-  ctx.stroke();
+  drawingContext.stroke();
 }
 
-function drawDots( ctx, grid ) {
-  ctx.fillStyle = DOT_COLOR;
+function drawDots( drawingContext, grid ) {
+  drawingContext.fillStyle = DOT_COLOR;
   for ( let y = 0; y < grid.length; y++ ) {
     for ( let x = 0; x < grid[ 0 ].length; x++ ) {
       if ( grid[ y ][ x ] !== 2 ) continue;
-      const { cx, cy } = cellCenter( x, y );
-      ctx.beginPath();
-      ctx.arc( cx, cy, 2.5, 0, Math.PI * 2 );
-      ctx.fill();
+      const { centerX, centerY } = cellCenter( x, y );
+      drawingContext.beginPath();
+      drawingContext.arc( centerX, centerY, 2.5, 0, Math.PI * 2 );
+      drawingContext.fill();
     }
   }
 }
 
-function drawPacman( ctx, p, frame ) {
-  const { cx, cy } = cellCenter( p.x, p.y );
-  let rot = 0;
-  if ( p.dir === 'right' ) rot = 0;
-  else if ( p.dir === 'down' ) rot = Math.PI / 2;
-  else if ( p.dir === 'left' ) rot = Math.PI;
-  else if ( p.dir === 'up' ) rot = -Math.PI / 2;
+function drawPacman( drawingContext, pacman, animationFrame ) {
+  const { centerX, centerY } = cellCenter( pacman.x, pacman.y );
+  let rotationRadians = 0;
+  if ( pacman.dir === 'right' ) rotationRadians = 0;
+  else if ( pacman.dir === 'down' ) rotationRadians = Math.PI / 2;
+  else if ( pacman.dir === 'left' ) rotationRadians = Math.PI;
+  else if ( pacman.dir === 'up' ) rotationRadians = -Math.PI / 2;
 
   // Boca animada: abre/cierra con el frame.
-  const open = ( Math.sin( frame * 0.3 ) * 0.5 + 0.5 ) * 0.28 + 0.02;
+  const mouthOpenRadians = ( Math.sin( animationFrame * 0.3 ) * 0.5 + 0.5 ) * 0.28 + 0.02;
 
-  ctx.fillStyle = '#ffff00';
-  ctx.beginPath();
-  ctx.moveTo( cx, cy );
-  ctx.arc( cx, cy, TILE / 2 - 1, rot + open * Math.PI, rot - open * Math.PI );
-  ctx.closePath();
-  ctx.fill();
+  drawingContext.fillStyle = '#ffff00';
+  drawingContext.beginPath();
+  drawingContext.moveTo( centerX, centerY );
+  drawingContext.arc( centerX, centerY, TILE / 2 - 1, rotationRadians + mouthOpenRadians * Math.PI, rotationRadians - mouthOpenRadians * Math.PI );
+  drawingContext.closePath();
+  drawingContext.fill();
 }
 
-function drawGhost( ctx, g, color ) {
-  const { cx, cy } = cellCenter( g.x, g.y );
-  const r = TILE / 2 - 1;
-  const top = cy - r;
-  const bottom = cy + r;
-  const left = cx - r;
-  const right = cx + r;
+function drawGhost( drawingContext, ghost, color ) {
+  const { centerX, centerY } = cellCenter( ghost.x, ghost.y );
+  const bodyRadius = TILE / 2 - 1;
+  const topEdge = centerY - bodyRadius;
+  const bottomEdge = centerY + bodyRadius;
+  const leftEdge = centerX - bodyRadius;
+  const rightEdge = centerX + bodyRadius;
 
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc( cx, cy - 1, r, Math.PI, 0, false ); // cabeza
-  ctx.lineTo( right, bottom );
+  drawingContext.fillStyle = color;
+  drawingContext.beginPath();
+  drawingContext.arc( centerX, centerY - 1, bodyRadius, Math.PI, 0, false ); // cabeza
+  drawingContext.lineTo( rightEdge, bottomEdge );
   // falda ondulada (3 picos)
-  ctx.lineTo( right - r * 0.66, bottom - 4 );
-  ctx.lineTo( cx, bottom );
-  ctx.lineTo( left + r * 0.66, bottom - 4 );
-  ctx.lineTo( left, bottom );
-  ctx.closePath();
-  ctx.fill();
+  drawingContext.lineTo( rightEdge - bodyRadius * 0.66, bottomEdge - 4 );
+  drawingContext.lineTo( centerX, bottomEdge );
+  drawingContext.lineTo( leftEdge + bodyRadius * 0.66, bottomEdge - 4 );
+  drawingContext.lineTo( leftEdge, bottomEdge );
+  drawingContext.closePath();
+  drawingContext.fill();
 
   // ojos mirando segun direccion
-  const dir = DIRS[ g.dir ] || { x: 0, y: 0 };
-  const ex = dir.x * 1.6;
-  const ey = dir.y * 1.6;
-  for ( const off of [ -3.5, 3.5 ] ) {
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc( cx + off, cy - 1, 3, 0, Math.PI * 2 );
-    ctx.fill();
-    ctx.fillStyle = '#0000bb';
-    ctx.beginPath();
-    ctx.arc( cx + off + ex, cy - 1 + ey, 1.5, 0, Math.PI * 2 );
-    ctx.fill();
+  const directionStep = ( window.DIRECTIONS || window.DIRS )[ ghost.dir ] || { x: 0, y: 0 };
+  const eyeOffsetX = directionStep.x * 1.6;
+  const eyeOffsetY = directionStep.y * 1.6;
+  for ( const eyeOffset of [ -3.5, 3.5 ] ) {
+    drawingContext.fillStyle = '#fff';
+    drawingContext.beginPath();
+    drawingContext.arc( centerX + eyeOffset, centerY - 1, 3, 0, Math.PI * 2 );
+    drawingContext.fill();
+    drawingContext.fillStyle = '#0000bb';
+    drawingContext.beginPath();
+    drawingContext.arc( centerX + eyeOffset + eyeOffsetX, centerY - 1 + eyeOffsetY, 1.5, 0, Math.PI * 2 );
+    drawingContext.fill();
   }
 }
 
-function drawHUD( ctx, game, W ) {
-  ctx.fillStyle = '#fff';
-  ctx.font = '14px "Courier New", monospace';
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'left';
-  ctx.fillText( 'SCORE ' + game.score, 8, 4 );
-  ctx.textAlign = 'right';
-  ctx.fillText( 'VIDAS ' + game.lives, W * TILE - 8, 4 );
+function drawHUD( drawingContext, game, mazeWidth ) {
+  drawingContext.fillStyle = '#fff';
+  drawingContext.font = '14px "Courier New", monospace';
+  drawingContext.textBaseline = 'top';
+  drawingContext.textAlign = 'left';
+  drawingContext.fillText( 'SCORE ' + game.score, 8, 4 );
+  drawingContext.textAlign = 'right';
+  drawingContext.fillText( 'VIDAS ' + game.lives, mazeWidth * TILE - 8, 4 );
 }
 
-const GHOST_COLORS = [ '#ff0000', '#00ffff', '#ffb8ff', '#ffb852' ];
+const GHOST_COLOR_BY_KIND = {
+  blinky: '#ff0000',
+  pinky: '#ffb8ff',
+  inky: '#00ffff',
+  clyde: '#ffb852',
+};
 
-function draw( ctx, game, frame ) {
+function getGhostColor( ghost ) {
+  return GHOST_COLOR_BY_KIND[ ghost.kind ] || '#ff0000';
+}
+
+function draw( drawingContext, game, animationFrame ) {
   const grid = game.grid;
-  const W = grid[ 0 ].length;
-  const H = grid.length;
+  const mazeWidth = grid[ 0 ].length;
+  const mazeHeight = grid.length;
 
-  ctx.fillStyle = '#000';
-  ctx.fillRect( 0, 0, W * TILE, H * TILE );
+  drawingContext.fillStyle = '#000';
+  drawingContext.fillRect( 0, 0, mazeWidth * TILE, mazeHeight * TILE );
 
-  drawWalls( ctx, grid );
-  drawDoor( ctx, grid );
-  drawDots( ctx, grid );
-  drawPacman( ctx, game.pacman, frame );
-  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000' ) );
-  drawHUD( ctx, game, W );
+  drawWalls( drawingContext, grid );
+  drawDoor( drawingContext, grid );
+  drawDots( drawingContext, grid );
+  drawPacman( drawingContext, game.pacman, animationFrame );
+  game.ghosts.forEach( ( ghost ) => drawGhost( drawingContext, ghost, getGhostColor( ghost ) ) );
+  drawHUD( drawingContext, game, mazeWidth );
 }
 
 window.draw = draw;
