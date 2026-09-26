@@ -2,15 +2,15 @@
 // Bucle, teclado y pantallas. Usa createGame/update/draw (globals).
 
 const canvas = document.getElementById( 'game' );
-const ctx = canvas.getContext( '2d' );
+const drawingContext = canvas.getContext( '2d' );
 const overlay = document.getElementById( 'overlay' );
-const actionBtn = document.getElementById( 'action-btn' );
+const actionButtonElement = document.getElementById( 'action-btn' );
 
 let game = createGame();
-let frame = 0;
+let animationFrame = 0;
 let lastFrameTimestamp = null;
 
-const KEY_DIR = {
+const KEY_TO_DIRECTION = {
   ArrowLeft: 'left',
   ArrowRight: 'right',
   ArrowUp: 'up',
@@ -18,7 +18,7 @@ const KEY_DIR = {
 };
 
 document.addEventListener( 'keydown', ( event ) => {
-  const direction = KEY_DIR[ event.key ];
+  const direction = KEY_TO_DIRECTION[ event.key ];
   if ( !direction ) return;
   event.preventDefault();
   if ( game.state === 'playing' ) game.pacman.nextDir = direction;
@@ -39,10 +39,10 @@ function startGame() {
   overlay.classList.remove( 'show' );
 }
 
-if ( actionBtn ) actionBtn.addEventListener( 'click', startGame );
+if ( actionButtonElement ) actionButtonElement.addEventListener( 'click', startGame );
 
 function loop( currentTimestamp ) {
-  frame++;
+  animationFrame++;
   if ( game.state === 'playing' ) {
     if ( lastFrameTimestamp === null ) lastFrameTimestamp = currentTimestamp;
     const deltaSeconds = ( currentTimestamp - lastFrameTimestamp ) / 1000;
@@ -53,7 +53,7 @@ function loop( currentTimestamp ) {
   } else {
     lastFrameTimestamp = currentTimestamp;
   }
-  draw( ctx, game, frame );
+  draw( drawingContext, game, animationFrame );
   requestAnimationFrame( loop );
 }
 
