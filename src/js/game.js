@@ -115,6 +115,43 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+function getGhostTarget( game, ghost ) {
+  const pacmanCellX = Math.round( game.pacman.x );
+  const pacmanCellY = Math.round( game.pacman.y );
+  const pacmanDirection = DIRS[ game.pacman.dir ] || { x: 0, y: 0 };
+
+  if ( ghost.kind === 'pinky' ) {
+    return {
+      x: pacmanCellX + pacmanDirection.x * 4,
+      y: pacmanCellY + pacmanDirection.y * 4,
+    };
+  }
+
+  if ( ghost.kind === 'inky' ) {
+    const pivotX = pacmanCellX + pacmanDirection.x * 2;
+    const pivotY = pacmanCellY + pacmanDirection.y * 2;
+    const blinkyGhost = game.ghosts.find( ( otherGhost ) => otherGhost.kind === 'blinky' ) || ghost;
+    const blinkyCellX = Math.round( blinkyGhost.x );
+    const blinkyCellY = Math.round( blinkyGhost.y );
+    return {
+      x: 2 * pivotX - blinkyCellX,
+      y: 2 * pivotY - blinkyCellY,
+    };
+  }
+
+  if ( ghost.kind === 'clyde' ) {
+    const clydeCellX = Math.round( ghost.x );
+    const clydeCellY = Math.round( ghost.y );
+    const manhattanDistance = Math.abs( clydeCellX - pacmanCellX ) + Math.abs( clydeCellY - pacmanCellY );
+    if ( manhattanDistance > 8 ) {
+      return { x: pacmanCellX, y: pacmanCellY };
+    }
+    return { x: 1, y: 29 };
+  }
+
+  return { x: pacmanCellX, y: pacmanCellY };
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
   const p = game.pacman;
