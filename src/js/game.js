@@ -146,10 +146,33 @@ function decideGhost( game, g ) {
   }
 }
 
+function moveGhostWaiting( g ) {
+  if ( g.dir !== 'up' && g.dir !== 'down' ) g.dir = 'up';
+  if ( aligned( g.x ) && aligned( g.y ) ) {
+    g.x = Math.round( g.x );
+    g.y = Math.round( g.y );
+    if ( g.y <= 13 ) g.dir = 'down';
+    else if ( g.y >= 15 ) g.dir = 'up';
+  }
+  const d = DIRS[ g.dir ];
+  g.y += d.y * g.speed;
+  if ( g.y < 13 ) {
+    g.y = 13;
+    g.dir = 'down';
+  } else if ( g.y > 15 ) {
+    g.y = 15;
+    g.dir = 'up';
+  }
+}
+
 function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
 
+  if ( g.phase === 'waiting' ) {
+    moveGhostWaiting( g );
+    return;
+  }
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
