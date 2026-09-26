@@ -180,7 +180,10 @@ function collides( a, b ) {
   return Math.abs( a.x - b.x ) < 0.5 && Math.abs( a.y - b.y ) < 0.5;
 }
 
-function update( game ) {
+function update( game, deltaSeconds ) {
+  if ( Number.isFinite( deltaSeconds ) && deltaSeconds > 0 ) {
+    game.elapsedSeconds += Math.min( deltaSeconds, 0.25 );
+  }
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
