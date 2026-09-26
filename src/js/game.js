@@ -203,10 +203,21 @@ function collides( a, b ) {
   return Math.abs( a.x - b.x ) < 0.5 && Math.abs( a.y - b.y ) < 0.5;
 }
 
+function updateGhostReleases( game ) {
+  for ( const g of game.ghosts ) {
+    if ( g.phase === 'waiting' && game.elapsedSeconds >= g.releaseAt ) {
+      g.phase = 'exiting';
+      g.x = Math.round( g.x );
+      g.y = Math.round( g.y );
+    }
+  }
+}
+
 function update( game, deltaSeconds ) {
   if ( Number.isFinite( deltaSeconds ) && deltaSeconds > 0 ) {
     game.elapsedSeconds += Math.min( deltaSeconds, 0.25 );
   }
+  updateGhostReleases( game );
   movePacman( game );
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
