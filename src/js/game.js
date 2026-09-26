@@ -28,6 +28,7 @@ function createGame() {
     score: 0,
     lives: 3,
     dotsRemaining: dots,
+    elapsedSeconds: 0,
     grid,
     pacman: {
       x: PACMAN_START.x,
@@ -37,11 +38,15 @@ function createGame() {
       speed: PACMAN_SPEED,
     },
     ghosts: GHOST_STARTS.map( ( g ) => ( {
+      name: g.name,
       x: g.x,
       y: g.y,
       dir: 'up',
       speed: GHOST_SPEED,
       kind: g.kind,
+      phase: 'waiting',
+      releaseAt: g.releaseAt,
+      exitLaneX: ( g.kind === 'blinky' || g.kind === 'inky' ) ? 13 : 14,
     } ) ),
   };
 }
