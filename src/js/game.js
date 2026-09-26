@@ -152,35 +152,30 @@ function getGhostTarget( game, ghost ) {
   return { x: pacmanCellX, y: pacmanCellY };
 }
 
-function decideGhost( game, g ) {
+function decideGhost( game, ghost ) {
   const grid = game.grid;
-  const p = game.pacman;
-
-  const options = Object.keys( DIRS ).filter(
-    ( dir ) => dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost' )
+  const forbiddenDirection = OPPOSITE[ ghost.dir ];
+  const preferenceOrder = [ 'up', 'left', 'down', 'right' ];
+  const passableDirections = preferenceOrder.filter(
+    ( direction ) => direction !== forbiddenDirection && canMove( grid, ghost.x, ghost.y, direction, 'ghost' )
   );
   // Sin salida (callejon): permitir el giro de 180.
-  const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
+  const candidateDirections = passableDirections.length ? passableDirections : [ '' + forbiddenDirection ];
 
-  if ( g.kind === 'hunter' ) {
-    const px = Math.round( p.x );
-    const py = Math.round( p.y );
-    let best = choices[ 0 ];
-    let bestDist = Infinity;
-    for ( const dir of choices ) {
-      const d = DIRS[ dir ];
-      const nx = g.x + d.x;
-      const ny = g.y + d.y;
-      const dist = Math.abs( nx - px ) + Math.abs( ny - py );
-      if ( dist < bestDist ) {
-        bestDist = dist;
-        best = dir;
-      }
+  const targetCell = getGhostTarget( game, ghost );
+  let bestDirection = candidateDirections[ 0 ];
+  let bestDistance = Infinity;
+  for ( const direction of candidateDirections ) {
+    const directionStep = DIRS[ direction ];
+    const neighborX = ghost.x + directionStep.x;
+    const neighborY = ghost.y + directionStep.y;
+    const manhattanDistance = Math.abs( neighborX - targetCell.x ) + Math.abs( neighborY - targetCell.y );
+    if ( manhattanDistance < bestDistance ) {
+      bestDistance = manhattanDistance;
+      bestDirection = direction;
     }
-    g.dir = best;
-  } else {
-    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
   }
+  ghost.dir = bestDirection;
 }
 
 function moveGhostWaiting( ghost ) {
