@@ -79,6 +79,19 @@ function drawDots( drawingContext, grid ) {
   }
 }
 
+function drawPowerPellets( drawingContext, grid ) {
+  drawingContext.fillStyle = DOT_COLOR;
+  for ( let y = 0; y < grid.length; y++ ) {
+    for ( let x = 0; x < grid[ 0 ].length; x++ ) {
+      if ( grid[ y ][ x ] !== 4 ) continue;
+      const { centerX, centerY } = cellCenter( x, y );
+      drawingContext.beginPath();
+      drawingContext.arc( centerX, centerY, 6, 0, Math.PI * 2 );
+      drawingContext.fill();
+    }
+  }
+}
+
 function drawPacman( drawingContext, pacman, animationFrame ) {
   const { centerX, centerY } = cellCenter( pacman.x, pacman.y );
   let rotationRadians = 0;
@@ -98,10 +111,9 @@ function drawPacman( drawingContext, pacman, animationFrame ) {
   drawingContext.fill();
 }
 
-function drawGhost( drawingContext, ghost, color ) {
+function drawGhostBody( drawingContext, ghost, color ) {
   const { centerX, centerY } = cellCenter( ghost.x, ghost.y );
   const bodyRadius = TILE / 2 - 1;
-  const topEdge = centerY - bodyRadius;
   const bottomEdge = centerY + bodyRadius;
   const leftEdge = centerX - bodyRadius;
   const rightEdge = centerX + bodyRadius;
@@ -117,6 +129,11 @@ function drawGhost( drawingContext, ghost, color ) {
   drawingContext.lineTo( leftEdge, bottomEdge );
   drawingContext.closePath();
   drawingContext.fill();
+  return { centerX, centerY };
+}
+
+function drawGhost( drawingContext, ghost, color ) {
+  const { centerX, centerY } = drawGhostBody( drawingContext, ghost, color );
 
   // ojos mirando segun direccion
   const directionStep = ( window.DIRECTIONS || window.DIRS )[ ghost.dir ] || { x: 0, y: 0 };
@@ -132,6 +149,44 @@ function drawGhost( drawingContext, ghost, color ) {
     drawingContext.arc( centerX + eyeOffset + eyeOffsetX, centerY - 1 + eyeOffsetY, 1.5, 0, Math.PI * 2 );
     drawingContext.fill();
   }
+}
+
+const FRIGHT_BLUE = '#2121ff';
+const FRIGHT_WHITE = '#ffffff';
+const FRIGHT_FACE = '#ffb8ad';
+const FRIGHT_BLINK_THRESHOLD = 2;
+const FRIGHT_BLINK_PERIOD = 0.25;
+
+function isGhostFrightenedRender( game, ghost ) {
+  if ( !Number.isFinite( game.frightenedSecondsRemaining ) || game.frightenedSecondsRemaining <= 0 ) return false;
+  return ghost.phase === 'active' || ghost.phase === 'exiting';
+}
+
+function getFrightenedColor( game ) {
+  const remaining = game.frightenedSecondsRemaining;
+  if ( !Number.isFinite( remaining ) || remaining <= 0 ) return FRIGHT_BLUE;
+  if ( remaining > FRIGHT_BLINK_THRESHOLD ) return FRIGHT_BLUE;
+  const slot = Math.floor( remaining / FRIGHT_BLINK_PERIOD );
+  return ( slot % 2 === 0 ) ? FRIGHT_BLUE : FRIGHT_WHITE;
+}
+
+function drawFrightenedGhost( drawingContext, ghost, color ) {
+  const { centerX, centerY } = drawGhostBody( drawingContext, ghost, color );
+  // cara asustada: ojos blancos centrados y boca abierta
+  for ( const eyeOffset of [ -3.5, 3.5 ] ) {
+    drawingContext.fillStyle = '#fff';
+    drawingContext.beginPath();
+    drawingContext.arc( centerX + eyeOffset, centerY - 2, 2.5, 0, Math.PI * 2 );
+    drawingContext.fill();
+    drawingContext.fillStyle = '#ff0000';
+    drawingContext.beginPath();
+    drawingContext.arc( centerX + eyeOffset, centerY - 2, 1, 0, Math.PI * 2 );
+    drawingContext.fill();
+  }
+  drawingContext.fillStyle = FRIGHT_FACE;
+  drawingContext.beginPath();
+  drawingContext.arc( centerX, centerY + 4, 2.5, 0, Math.PI * 2 );
+  drawingContext.fill();
 }
 
 function drawHUD( drawingContext, game, mazeWidth ) {
@@ -166,8 +221,15 @@ function draw( drawingContext, game, animationFrame ) {
   drawWalls( drawingContext, grid );
   drawDoor( drawingContext, grid );
   drawDots( drawingContext, grid );
+  drawPowerPellets( drawingContext, grid );
   drawPacman( drawingContext, game.pacman, animationFrame );
-  game.ghosts.forEach( ( ghost ) => drawGhost( drawingContext, ghost, getGhostColor( ghost ) ) );
+  game.ghosts.forEach( ( ghost ) => {
+    if ( isGhostFrightenedRender( game, ghost ) ) {
+      drawFrightenedGhost( drawingContext, ghost, getFrightenedColor( game ) );
+    } else {
+      drawGhost( drawingContext, ghost, getGhostColor( ghost ) );
+    }
+  } );
   drawHUD( drawingContext, game, mazeWidth );
 }
 

@@ -1,6 +1,6 @@
 // game.js
 // Estado y reglas. Depende de globals de maze.js: MAZE, TUNNEL_ROW,
-// PACMAN_START, GHOST_STARTS.
+// PACMAN_START, GHOST_STARTS, POWER_PELLET_POINTS.
 
 const DIRECTIONS = {
   left: { x: -1, y: 0 },
@@ -13,6 +13,10 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+const FRIGHTENED_SECONDS_PER_PELLET = 10;
+const FRIGHTENED_MAX_SECONDS = 20;
+const GHOST_FRIGHT_POINTS = 200;
+const EATEN_WAIT_SECONDS = 10;
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -30,6 +34,7 @@ function createGame() {
     lives: 3,
     dotsRemaining: dots,
     elapsedSeconds: 0,
+    frightenedSecondsRemaining: 0,
     grid,
     pacman: {
       x: PACMAN_START.x,
@@ -48,6 +53,7 @@ function createGame() {
       phase: 'waiting',
       releaseAt: ghostStart.releaseAt,
       exitLaneX: ( ghostStart.kind === 'blinky' || ghostStart.kind === 'inky' ) ? 13 : 14,
+      respawnSecondsRemaining: 0,
     } ) ),
   };
 }
@@ -110,6 +116,14 @@ function movePacman( game ) {
       game.score += 10;
       game.dotsRemaining--;
     }
+    // Comer power pellet: 50 puntos y suma 10s con maximo 20s.
+    if ( grid[ pacman.y ][ pacman.x ] === 4 ) {
+      grid[ pacman.y ][ pacman.x ] = 0;
+      const pelletPoints = ( typeof POWER_PELLET_POINTS !== 'undefined' ) ? POWER_PELLET_POINTS : 50;
+      game.score += pelletPoints;
+      const currentFright = ( Number.isFinite( game.frightenedSecondsRemaining ) && game.frightenedSecondsRemaining > 0 ) ? game.frightenedSecondsRemaining : 0;
+      game.frightenedSecondsRemaining = Math.min( currentFright + FRIGHTENED_SECONDS_PER_PELLET, FRIGHTENED_MAX_SECONDS );
+    }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, pacman.x, pacman.y, pacman.dir, 'pacman' ) ) return;
   }
@@ -157,6 +171,11 @@ function getGhostTarget( game, ghost ) {
   return { x: pacmanCellX, y: pacmanCellY };
 }
 
+function isGhostFrightened( game, ghost ) {
+  if ( !Number.isFinite( game.frightenedSecondsRemaining ) || game.frightenedSecondsRemaining <= 0 ) return false;
+  return ghost.phase === 'active' || ghost.phase === 'exiting';
+}
+
 function decideGhost( game, ghost ) {
   const grid = game.grid;
   const forbiddenDirection = OPPOSITE[ ghost.dir ];
@@ -166,6 +185,26 @@ function decideGhost( game, ghost ) {
   );
   // Sin salida (callejon): permitir el giro de 180.
   const candidateDirections = passableDirections.length ? passableDirections : [ '' + forbiddenDirection ];
+
+  // Huida asustada: maximizar distancia Manhattan a Pac-Man, mismo desempate.
+  if ( isGhostFrightened( game, ghost ) && ghost.phase === 'active' ) {
+    const pacmanCellX = Math.round( game.pacman.x );
+    const pacmanCellY = Math.round( game.pacman.y );
+    let bestDirection = candidateDirections[ 0 ];
+    let bestDistance = -Infinity;
+    for ( const direction of candidateDirections ) {
+      const directionStep = DIRECTIONS[ direction ];
+      const neighborX = ghost.x + directionStep.x;
+      const neighborY = ghost.y + directionStep.y;
+      const manhattanDistance = Math.abs( neighborX - pacmanCellX ) + Math.abs( neighborY - pacmanCellY );
+      if ( manhattanDistance > bestDistance ) {
+        bestDistance = manhattanDistance;
+        bestDirection = direction;
+      }
+    }
+    ghost.dir = bestDirection;
+    return;
+  }
 
   const targetCell = getGhostTarget( game, ghost );
   let bestDirection = candidateDirections[ 0 ];
@@ -238,6 +277,10 @@ function moveGhost( game, ghost ) {
     moveGhostWaiting( ghost );
     return;
   }
+  if ( ghost.phase === 'eatenWaiting' ) {
+    moveGhostWaiting( ghost );
+    return;
+  }
   if ( ghost.phase === 'exiting' ) {
     moveGhostExiting( ghost );
     return;
@@ -262,11 +305,14 @@ function resetPositions( game ) {
   pacman.dir = 'left';
   pacman.nextDir = null;
   game.elapsedSeconds = 0;
+  game.frightenedSecondsRemaining = 0;
   game.ghosts.forEach( ( ghost, ghostIndex ) => {
     ghost.x = GHOST_STARTS[ ghostIndex ].x;
     ghost.y = GHOST_STARTS[ ghostIndex ].y;
     ghost.dir = 'up';
     ghost.phase = 'waiting';
+    ghost.releaseAt = GHOST_STARTS[ ghostIndex ].releaseAt;
+    ghost.respawnSecondsRemaining = 0;
   } );
 }
 
@@ -284,25 +330,61 @@ function updateGhostReleases( game ) {
   }
 }
 
+function updateEatenTransitions( game ) {
+  for ( const ghost of game.ghosts ) {
+    if ( ghost.phase !== 'eatenWaiting' ) continue;
+    if ( Number.isFinite( ghost.respawnSecondsRemaining ) && ghost.respawnSecondsRemaining > 0 ) continue;
+    ghost.phase = 'exiting';
+    ghost.x = Math.round( ghost.x );
+    ghost.y = Math.round( ghost.y );
+  }
+}
+
+function updateTimers( game, deltaSeconds ) {
+  if ( !Number.isFinite( deltaSeconds ) || deltaSeconds <= 0 ) return;
+  const cappedDelta = Math.min( deltaSeconds, 0.25 );
+  if ( Number.isFinite( game.frightenedSecondsRemaining ) && game.frightenedSecondsRemaining > 0 ) {
+    game.frightenedSecondsRemaining = Math.max( 0, game.frightenedSecondsRemaining - cappedDelta );
+  }
+  for ( const ghost of game.ghosts ) {
+    if ( ghost.phase !== 'eatenWaiting' ) continue;
+    if ( Number.isFinite( ghost.respawnSecondsRemaining ) && ghost.respawnSecondsRemaining > 0 ) {
+      ghost.respawnSecondsRemaining = Math.max( 0, ghost.respawnSecondsRemaining - cappedDelta );
+    }
+  }
+}
+
 function update( game, deltaSeconds ) {
   if ( Number.isFinite( deltaSeconds ) && deltaSeconds > 0 ) {
     game.elapsedSeconds += Math.min( deltaSeconds, 0.25 );
   }
+  updateTimers( game, deltaSeconds );
+  updateEatenTransitions( game );
   updateGhostReleases( game );
   movePacman( game );
   game.ghosts.forEach( ( ghost ) => moveGhost( game, ghost ) );
 
-  for ( const ghost of game.ghosts ) {
-    if ( ghost.phase === 'waiting' ) continue;
-    if ( collides( game.pacman, ghost ) ) {
-      game.lives--;
-      if ( game.lives <= 0 ) {
-        game.state = 'lost';
-        return;
-      }
-      resetPositions( game );
-      break;
+  for ( let ghostIndex = 0; ghostIndex < game.ghosts.length; ghostIndex++ ) {
+    const ghost = game.ghosts[ ghostIndex ];
+    if ( ghost.phase === 'waiting' || ghost.phase === 'eatenWaiting' ) continue;
+    if ( !collides( game.pacman, ghost ) ) continue;
+    // Captura asustada: solo en 'active' o 'exiting' con efecto activo.
+    if ( isGhostFrightened( game, ghost ) && ( ghost.phase === 'active' || ghost.phase === 'exiting' ) ) {
+      game.score += GHOST_FRIGHT_POINTS;
+      ghost.x = GHOST_STARTS[ ghostIndex ].x;
+      ghost.y = GHOST_STARTS[ ghostIndex ].y;
+      ghost.dir = 'up';
+      ghost.phase = 'eatenWaiting';
+      ghost.respawnSecondsRemaining = EATEN_WAIT_SECONDS;
+      continue;
     }
+    game.lives--;
+    if ( game.lives <= 0 ) {
+      game.state = 'lost';
+      return;
+    }
+    resetPositions( game );
+    break;
   }
 
   if ( game.dotsRemaining <= 0 ) game.state = 'won';
