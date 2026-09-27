@@ -305,11 +305,14 @@ function resetPositions( game ) {
   pacman.dir = 'left';
   pacman.nextDir = null;
   game.elapsedSeconds = 0;
+  game.frightenedSecondsRemaining = 0;
   game.ghosts.forEach( ( ghost, ghostIndex ) => {
     ghost.x = GHOST_STARTS[ ghostIndex ].x;
     ghost.y = GHOST_STARTS[ ghostIndex ].y;
     ghost.dir = 'up';
     ghost.phase = 'waiting';
+    ghost.releaseAt = GHOST_STARTS[ ghostIndex ].releaseAt;
+    ghost.respawnSecondsRemaining = 0;
   } );
 }
 
