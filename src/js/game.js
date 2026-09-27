@@ -1,6 +1,6 @@
 // game.js
 // Estado y reglas. Depende de globals de maze.js: MAZE, TUNNEL_ROW,
-// PACMAN_START, GHOST_STARTS.
+// PACMAN_START, GHOST_STARTS, POWER_PELLET_POINTS.
 
 const DIRECTIONS = {
   left: { x: -1, y: 0 },
@@ -13,6 +13,8 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+const FRIGHTENED_SECONDS_PER_PELLET = 10;
+const FRIGHTENED_MAX_SECONDS = 20;
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -111,6 +113,14 @@ function movePacman( game ) {
       grid[ pacman.y ][ pacman.x ] = 0;
       game.score += 10;
       game.dotsRemaining--;
+    }
+    // Comer power pellet: 50 puntos y suma 10s con maximo 20s.
+    if ( grid[ pacman.y ][ pacman.x ] === 4 ) {
+      grid[ pacman.y ][ pacman.x ] = 0;
+      const pelletPoints = ( typeof POWER_PELLET_POINTS !== 'undefined' ) ? POWER_PELLET_POINTS : 50;
+      game.score += pelletPoints;
+      const currentFright = ( Number.isFinite( game.frightenedSecondsRemaining ) && game.frightenedSecondsRemaining > 0 ) ? game.frightenedSecondsRemaining : 0;
+      game.frightenedSecondsRemaining = Math.min( currentFright + FRIGHTENED_SECONDS_PER_PELLET, FRIGHTENED_MAX_SECONDS );
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, pacman.x, pacman.y, pacman.dir, 'pacman' ) ) return;
