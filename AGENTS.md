@@ -12,9 +12,11 @@
 - `src/index.html` loads classic scripts in dependency order: `maze.js`, `game.js`, `render.js`, `main.js`. They communicate through `window` globals, not ES modules; preserve this order unless converting every dependency together.
 - `maze.js` owns the pristine 28x31 tile map and spawn constants. Tile values are `0` traversable, `1` wall, `2` dot, and `3` ghost-pen door; coordinates are `(x, y)` from the top-left.
 - `game.js` owns mutable game state and rules. `createGame()` must copy `MAZE`; consumed dots must mutate `game.grid`, never `MAZE`, so restart remains clean.
+- Ghosts carry `phase`: `waiting` (vertical bounce between rows 13-15), `exiting` (direct lane to `(exitLaneX, 11)`, then `active`), `active` (maze chase). `resetPositions` and `createGame()` restore all four ghosts to their pen spawns in `waiting`.
+- The pen door (tile `3` at `(13, 12)` and `(14, 12)`) is one-way by phase: `isWall(grid, x, y, actor, phase)` and `canMove(..., actor, phase)` treat tile `3` as wall for `pacman` always and for `ghost` only when `phase === 'active'`; `waiting`/`exiting` keep crossing permission, and `exiting` moves by direct coordinates without collision checks. Ghost callers (`decideGhost`, `active` movement) must pass `ghost.phase`; omitted `phase` preserves the old permissive behavior outside `active`.
 - `render.js` draws from `game.grid`. Its `TILE = 20`, the 28x31 map, and the canvas size `560x620` are coupled; change them together.
 - Movement is measured in cells per animation frame. Turning and ghost decisions happen only on integer-cell alignment; speed changes must still reach exact cell boundaries or account for alignment explicitly.
-- Ghost movement uses `Math.random()`, so browser behavior is nondeterministic unless randomness is deliberately injected or stubbed.
+- Ghost targeting is deterministic (`getGhostTarget` per kind); there is no `Math.random()` in `src/js`, so no randomness stubbing is needed.
 
 ## Spec Workflow
 

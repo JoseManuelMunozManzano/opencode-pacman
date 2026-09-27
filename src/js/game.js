@@ -58,25 +58,29 @@ function aligned( position ) {
 
 // Una celda es muro para el actor dado?
 //   pacman: bloqueado por pared (1) y puerta (3)
-//   ghost:  bloqueado solo por pared (1)
-function isWall( grid, x, y, actor ) {
+//   ghost:  bloqueado solo por pared (1), salvo fase 'active' que tambien
+//           bloquea la puerta (3) para impedir el reingreso al corral.
+//   phase por defecto conserva el permiso actual fuera de 'active'.
+function isWall( grid, x, y, actor, phase ) {
   if ( y < 0 || y >= grid.length ) return true;
   if ( x < 0 || x >= grid[ 0 ].length ) return true;
   const tileValue = grid[ y ][ x ];
   if ( tileValue === 1 ) return true;
   if ( tileValue === 3 && actor === 'pacman' ) return true;
+  if ( tileValue === 3 && actor === 'ghost' && phase === 'active' ) return true;
   return false;
 }
 
 // Puede el actor avanzar desde (x,y) en la direccion directionName?
-function canMove( grid, x, y, directionName, actor ) {
+// phase solo importa para fantasmas: 'active' bloquea puerta (3).
+function canMove( grid, x, y, directionName, actor, phase ) {
   const directionStep = DIRECTIONS[ directionName ];
   if ( !directionStep ) return false;
   const targetX = x + directionStep.x;
   const targetY = y + directionStep.y;
   // Tunel: salir por un borde en la fila del tunel siempre es valido.
   if ( targetY === TUNNEL_ROW && ( targetX < 0 || targetX >= grid[ 0 ].length ) ) return true;
-  return !isWall( grid, targetX, targetY, actor );
+  return !isWall( grid, targetX, targetY, actor, phase );
 }
 
 function wrapTunnel( movingActor, mazeWidth ) {
@@ -158,7 +162,7 @@ function decideGhost( game, ghost ) {
   const forbiddenDirection = OPPOSITE[ ghost.dir ];
   const preferenceOrder = [ 'up', 'left', 'down', 'right' ];
   const passableDirections = preferenceOrder.filter(
-    ( direction ) => direction !== forbiddenDirection && canMove( grid, ghost.x, ghost.y, direction, 'ghost' )
+    ( direction ) => direction !== forbiddenDirection && canMove( grid, ghost.x, ghost.y, direction, 'ghost', ghost.phase )
   );
   // Sin salida (callejon): permitir el giro de 180.
   const candidateDirections = passableDirections.length ? passableDirections : [ '' + forbiddenDirection ];
@@ -242,7 +246,7 @@ function moveGhost( game, ghost ) {
     ghost.x = Math.round( ghost.x );
     ghost.y = Math.round( ghost.y );
     decideGhost( game, ghost );
-    if ( !canMove( grid, ghost.x, ghost.y, ghost.dir, 'ghost' ) ) return;
+    if ( !canMove( grid, ghost.x, ghost.y, ghost.dir, 'ghost', ghost.phase ) ) return;
   }
 
   const direction = DIRECTIONS[ ghost.dir ];
