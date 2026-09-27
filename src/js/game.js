@@ -15,6 +15,8 @@ const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 const FRIGHTENED_SECONDS_PER_PELLET = 10;
 const FRIGHTENED_MAX_SECONDS = 20;
+const GHOST_FRIGHT_POINTS = 200;
+const EATEN_WAIT_SECONDS = 10;
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -344,17 +346,27 @@ function update( game, deltaSeconds ) {
   movePacman( game );
   game.ghosts.forEach( ( ghost ) => moveGhost( game, ghost ) );
 
-  for ( const ghost of game.ghosts ) {
-    if ( ghost.phase === 'waiting' ) continue;
-    if ( collides( game.pacman, ghost ) ) {
-      game.lives--;
-      if ( game.lives <= 0 ) {
-        game.state = 'lost';
-        return;
-      }
-      resetPositions( game );
-      break;
+  for ( let ghostIndex = 0; ghostIndex < game.ghosts.length; ghostIndex++ ) {
+    const ghost = game.ghosts[ ghostIndex ];
+    if ( ghost.phase === 'waiting' || ghost.phase === 'eatenWaiting' ) continue;
+    if ( !collides( game.pacman, ghost ) ) continue;
+    // Captura asustada: solo en 'active' o 'exiting' con efecto activo.
+    if ( isGhostFrightened( game, ghost ) && ( ghost.phase === 'active' || ghost.phase === 'exiting' ) ) {
+      game.score += GHOST_FRIGHT_POINTS;
+      ghost.x = GHOST_STARTS[ ghostIndex ].x;
+      ghost.y = GHOST_STARTS[ ghostIndex ].y;
+      ghost.dir = 'up';
+      ghost.phase = 'eatenWaiting';
+      ghost.respawnSecondsRemaining = EATEN_WAIT_SECONDS;
+      continue;
     }
+    game.lives--;
+    if ( game.lives <= 0 ) {
+      game.state = 'lost';
+      return;
+    }
+    resetPositions( game );
+    break;
   }
 
   if ( game.dotsRemaining <= 0 ) game.state = 'won';
