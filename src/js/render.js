@@ -152,11 +152,22 @@ function drawGhost( drawingContext, ghost, color ) {
 }
 
 const FRIGHT_BLUE = '#2121ff';
+const FRIGHT_WHITE = '#ffffff';
 const FRIGHT_FACE = '#ffb8ad';
+const FRIGHT_BLINK_THRESHOLD = 2;
+const FRIGHT_BLINK_PERIOD = 0.25;
 
 function isGhostFrightenedRender( game, ghost ) {
   if ( !Number.isFinite( game.frightenedSecondsRemaining ) || game.frightenedSecondsRemaining <= 0 ) return false;
   return ghost.phase === 'active' || ghost.phase === 'exiting';
+}
+
+function getFrightenedColor( game ) {
+  const remaining = game.frightenedSecondsRemaining;
+  if ( !Number.isFinite( remaining ) || remaining <= 0 ) return FRIGHT_BLUE;
+  if ( remaining > FRIGHT_BLINK_THRESHOLD ) return FRIGHT_BLUE;
+  const slot = Math.floor( remaining / FRIGHT_BLINK_PERIOD );
+  return ( slot % 2 === 0 ) ? FRIGHT_BLUE : FRIGHT_WHITE;
 }
 
 function drawFrightenedGhost( drawingContext, ghost, color ) {
@@ -214,7 +225,7 @@ function draw( drawingContext, game, animationFrame ) {
   drawPacman( drawingContext, game.pacman, animationFrame );
   game.ghosts.forEach( ( ghost ) => {
     if ( isGhostFrightenedRender( game, ghost ) ) {
-      drawFrightenedGhost( drawingContext, ghost, FRIGHT_BLUE );
+      drawFrightenedGhost( drawingContext, ghost, getFrightenedColor( game ) );
     } else {
       drawGhost( drawingContext, ghost, getGhostColor( ghost ) );
     }
