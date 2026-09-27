@@ -30,6 +30,7 @@ function createGame() {
     lives: 3,
     dotsRemaining: dots,
     elapsedSeconds: 0,
+    frightenedSecondsRemaining: 0,
     grid,
     pacman: {
       x: PACMAN_START.x,
@@ -48,6 +49,7 @@ function createGame() {
       phase: 'waiting',
       releaseAt: ghostStart.releaseAt,
       exitLaneX: ( ghostStart.kind === 'blinky' || ghostStart.kind === 'inky' ) ? 13 : 14,
+      respawnSecondsRemaining: 0,
     } ) ),
   };
 }
