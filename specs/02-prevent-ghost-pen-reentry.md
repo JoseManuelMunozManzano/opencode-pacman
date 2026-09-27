@@ -1,6 +1,6 @@
 # SPEC 02 — Impedir reingreso de fantasmas al corral
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01
 > **Date:** 2026-09-27
 > **Objective:** Impedir que un fantasma en fase `active` vuelva a entrar al corral, restaurando la posición inicial en el corral solo al perder una vida o al empezar una partida nueva.

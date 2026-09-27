@@ -1,6 +1,6 @@
 # SPEC 01 — Cuatro fantasmas con personalidades
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** Ninguna
 > **Date:** 2026-09-26
 > **Objective:** Dotar al juego de cuatro fantasmas con comportamientos diferenciados, uno de ellos agresivo, con liberación escalonada cada 1.5 segundos.

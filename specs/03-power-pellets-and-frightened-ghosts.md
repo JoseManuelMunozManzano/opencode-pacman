@@ -1,6 +1,6 @@
 # SPEC 03 — Power pellets y fantasmas asustados
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01, SPEC 02
 > **Date:** 2026-09-27
 > **Objective:** Añadir cuatro power pellets en las esquinas que activan 10 segundos de modo asustado comestible con retorno al corral y espera de 10 segundos tras cada captura.
