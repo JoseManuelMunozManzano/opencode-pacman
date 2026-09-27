@@ -52,6 +52,13 @@ const MAZE = MAZE_TEXT_ROWS.map( ( row ) => row.split( '' ).map( parseTile ) );
 
 const TUNNEL_ROW = 14;
 const PACMAN_START = { x: 13, y: 23 };
+const POWER_PELLET_POINTS = 50;
+const POWER_PELLET_POSITIONS = [
+  { x: 1, y: 1 },
+  { x: 26, y: 1 },
+  { x: 1, y: 29 },
+  { x: 26, y: 29 },
+];
 const GHOST_STARTS = [
   { name: 'Blinky', kind: 'blinky', x: 13, y: 14, releaseAt: 1.5 },
   { name: 'Pinky', kind: 'pinky', x: 14, y: 14, releaseAt: 3.0 },
@@ -63,3 +70,5 @@ window.MAZE = MAZE;
 window.TUNNEL_ROW = TUNNEL_ROW;
 window.PACMAN_START = PACMAN_START;
 window.GHOST_STARTS = GHOST_STARTS;
+window.POWER_PELLET_POINTS = POWER_PELLET_POINTS;
+window.POWER_PELLET_POSITIONS = POWER_PELLET_POSITIONS;
