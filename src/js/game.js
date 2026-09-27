@@ -58,13 +58,16 @@ function aligned( position ) {
 
 // Una celda es muro para el actor dado?
 //   pacman: bloqueado por pared (1) y puerta (3)
-//   ghost:  bloqueado solo por pared (1)
-function isWall( grid, x, y, actor ) {
+//   ghost:  bloqueado solo por pared (1), salvo fase 'active' que tambien
+//           bloquea la puerta (3) para impedir el reingreso al corral.
+//   phase por defecto conserva el permiso actual fuera de 'active'.
+function isWall( grid, x, y, actor, phase ) {
   if ( y < 0 || y >= grid.length ) return true;
   if ( x < 0 || x >= grid[ 0 ].length ) return true;
   const tileValue = grid[ y ][ x ];
   if ( tileValue === 1 ) return true;
   if ( tileValue === 3 && actor === 'pacman' ) return true;
+  if ( tileValue === 3 && actor === 'ghost' && phase === 'active' ) return true;
   return false;
 }
 
