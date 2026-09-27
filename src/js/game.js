@@ -169,6 +169,11 @@ function getGhostTarget( game, ghost ) {
   return { x: pacmanCellX, y: pacmanCellY };
 }
 
+function isGhostFrightened( game, ghost ) {
+  if ( !Number.isFinite( game.frightenedSecondsRemaining ) || game.frightenedSecondsRemaining <= 0 ) return false;
+  return ghost.phase === 'active' || ghost.phase === 'exiting';
+}
+
 function decideGhost( game, ghost ) {
   const grid = game.grid;
   const forbiddenDirection = OPPOSITE[ ghost.dir ];
@@ -178,6 +183,26 @@ function decideGhost( game, ghost ) {
   );
   // Sin salida (callejon): permitir el giro de 180.
   const candidateDirections = passableDirections.length ? passableDirections : [ '' + forbiddenDirection ];
+
+  // Huida asustada: maximizar distancia Manhattan a Pac-Man, mismo desempate.
+  if ( isGhostFrightened( game, ghost ) && ghost.phase === 'active' ) {
+    const pacmanCellX = Math.round( game.pacman.x );
+    const pacmanCellY = Math.round( game.pacman.y );
+    let bestDirection = candidateDirections[ 0 ];
+    let bestDistance = -Infinity;
+    for ( const direction of candidateDirections ) {
+      const directionStep = DIRECTIONS[ direction ];
+      const neighborX = ghost.x + directionStep.x;
+      const neighborY = ghost.y + directionStep.y;
+      const manhattanDistance = Math.abs( neighborX - pacmanCellX ) + Math.abs( neighborY - pacmanCellY );
+      if ( manhattanDistance > bestDistance ) {
+        bestDistance = manhattanDistance;
+        bestDirection = direction;
+      }
+    }
+    ghost.dir = bestDirection;
+    return;
+  }
 
   const targetCell = getGhostTarget( game, ghost );
   let bestDirection = candidateDirections[ 0 ];
