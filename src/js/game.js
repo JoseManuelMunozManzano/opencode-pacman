@@ -296,10 +296,25 @@ function updateGhostReleases( game ) {
   }
 }
 
+function updateTimers( game, deltaSeconds ) {
+  if ( !Number.isFinite( deltaSeconds ) || deltaSeconds <= 0 ) return;
+  const cappedDelta = Math.min( deltaSeconds, 0.25 );
+  if ( Number.isFinite( game.frightenedSecondsRemaining ) && game.frightenedSecondsRemaining > 0 ) {
+    game.frightenedSecondsRemaining = Math.max( 0, game.frightenedSecondsRemaining - cappedDelta );
+  }
+  for ( const ghost of game.ghosts ) {
+    if ( ghost.phase !== 'eatenWaiting' ) continue;
+    if ( Number.isFinite( ghost.respawnSecondsRemaining ) && ghost.respawnSecondsRemaining > 0 ) {
+      ghost.respawnSecondsRemaining = Math.max( 0, ghost.respawnSecondsRemaining - cappedDelta );
+    }
+  }
+}
+
 function update( game, deltaSeconds ) {
   if ( Number.isFinite( deltaSeconds ) && deltaSeconds > 0 ) {
     game.elapsedSeconds += Math.min( deltaSeconds, 0.25 );
   }
+  updateTimers( game, deltaSeconds );
   updateGhostReleases( game );
   movePacman( game );
   game.ghosts.forEach( ( ghost ) => moveGhost( game, ghost ) );
