@@ -277,6 +277,10 @@ function moveGhost( game, ghost ) {
     moveGhostWaiting( ghost );
     return;
   }
+  if ( ghost.phase === 'eatenWaiting' ) {
+    moveGhostWaiting( ghost );
+    return;
+  }
   if ( ghost.phase === 'exiting' ) {
     moveGhostExiting( ghost );
     return;
@@ -323,6 +327,16 @@ function updateGhostReleases( game ) {
   }
 }
 
+function updateEatenTransitions( game ) {
+  for ( const ghost of game.ghosts ) {
+    if ( ghost.phase !== 'eatenWaiting' ) continue;
+    if ( Number.isFinite( ghost.respawnSecondsRemaining ) && ghost.respawnSecondsRemaining > 0 ) continue;
+    ghost.phase = 'exiting';
+    ghost.x = Math.round( ghost.x );
+    ghost.y = Math.round( ghost.y );
+  }
+}
+
 function updateTimers( game, deltaSeconds ) {
   if ( !Number.isFinite( deltaSeconds ) || deltaSeconds <= 0 ) return;
   const cappedDelta = Math.min( deltaSeconds, 0.25 );
@@ -342,6 +356,7 @@ function update( game, deltaSeconds ) {
     game.elapsedSeconds += Math.min( deltaSeconds, 0.25 );
   }
   updateTimers( game, deltaSeconds );
+  updateEatenTransitions( game );
   updateGhostReleases( game );
   movePacman( game );
   game.ghosts.forEach( ( ghost ) => moveGhost( game, ghost ) );
